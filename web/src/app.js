@@ -176,8 +176,11 @@
       });
     }
     renderCells();
-    // Start at the most recent weeks on narrow screens, like GitHub does.
+    // Start at the most recent weeks on narrow screens, like GitHub does,
+    // without letting the rebuild move the page itself.
+    const pageY = window.scrollY;
     graph.parentElement.scrollLeft = graph.parentElement.scrollWidth;
+    window.scrollTo(window.scrollX, pageY);
   }
 
   function renderCells() {
@@ -1072,4 +1075,5 @@
   // The desktop app keeps its own storage, so remember the token by default there.
   $('remember').checked = saved.token ? saved.remember : Boolean(desktop);
   if (saved.token) connect(saved.token, saved.remember);
+  requestAnimationFrame(() => window.scrollTo(0, 0));
 })();
