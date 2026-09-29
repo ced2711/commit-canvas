@@ -2,7 +2,7 @@
   const MAX_COMMITS = 2000;
   const MANY_COMMITS = 200;
   // OAuth App client ID for "Sign in with GitHub" (device flow, desktop app only).
-  const OAUTH_CLIENT_ID = '';
+  const OAUTH_CLIENT_ID = 'Ov23liiuYaEx3OwBhJGK';
 
   const $ = (id) => document.getElementById(id);
   const desktop = window.__TAURI__ ?? null;
