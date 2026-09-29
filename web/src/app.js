@@ -446,6 +446,21 @@
     $('progress').firstElementChild.style.width = total ? `${(100 * done) / total}%` : '0';
   }
 
+  // In-page confirmation dialog; resolves to true when confirmed.
+  function ask(title, body, okLabel, note = '') {
+    const dialog = $('confirm');
+    $('confirm-title').textContent = title;
+    $('confirm-body').textContent = body;
+    $('confirm-note').textContent = note;
+    $('confirm-note').hidden = !note;
+    $('confirm-ok').textContent = okLabel;
+    dialog.returnValue = '';
+    dialog.showModal();
+    return new Promise((resolve) => {
+      dialog.addEventListener('close', () => resolve(dialog.returnValue === 'ok'), { once: true });
+    });
+  }
+
   $('paint').addEventListener('click', async () => {
     const repo = $('repo').value;
     if (!state.api || !repo) {
@@ -459,13 +474,14 @@
       return;
     }
 
-    const dialog = $('confirm');
     const branch = state.repos.find((r) => r.fullName === repo)?.branch ?? 'main';
-    $('confirm-body').textContent = t('confirm.body', { commits: dates.length, days: drawn.length, repo, branch });
-    dialog.returnValue = '';
-    dialog.showModal();
-    await new Promise((resolve) => dialog.addEventListener('close', resolve, { once: true }));
-    if (dialog.returnValue !== 'ok') return;
+    const ok = await ask(
+      t('confirm.title'),
+      t('confirm.body', { commits: dates.length, days: drawn.length, repo, branch }),
+      t('confirm.ok'),
+      t('confirm.note'),
+    );
+    if (!ok) return;
 
     setBusy(true);
     setStatus(t('progress.prepare'));
@@ -500,7 +516,9 @@
 
   $('last-undo').addEventListener('click', async () => {
     const last = store.get('cc.last');
-    if (!last || !window.confirm(t('undoPaint.confirm', { repo: last.fullName, branch: last.branch }))) return;
+    if (!last) return;
+    const ok = await ask(t('last.undo'), t('undoPaint.confirm', { repo: last.fullName, branch: last.branch }), t('last.undo'));
+    if (!ok) return;
     setBusy(true);
     try {
       await state.api.undoPaint(last);
@@ -525,6 +543,18 @@
     applyLanguage();
   });
 
+  // ---------- desktop app ----------
+  // Inside the Tauri desktop app, open external links in the system browser.
+  const desktop = window.__TAURI__;
+  if (desktop) {
+    document.addEventListener('click', (event) => {
+      const link = event.target.closest('a[href^="http"]');
+      if (!link) return;
+      event.preventDefault();
+      desktop.opener.openUrl(link.href).catch(() => window.open(link.href, '_blank'));
+    });
+  }
+
   // ---------- start ----------
   state.weeks = offlineWeeks();
   state.strength ??= 4;
@@ -532,8 +562,7 @@
   selectLevel(4);
   applyLanguage();
   const saved = savedToken();
-  if (saved.token) {
-    $('remember').checked = saved.remember;
-    connect(saved.token, saved.remember);
-  }
+  // The desktop app keeps its own storage, so remember the token by default there.
+  $('remember').checked = saved.token ? saved.remember : Boolean(desktop);
+  if (saved.token) connect(saved.token, saved.remember);
 })();

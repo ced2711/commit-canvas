@@ -1,0 +1,4 @@
+/target/
+/gen/schemas
+/icons/
+Cargo.lock

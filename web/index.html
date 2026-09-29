@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <meta name="description" content="Draw on your GitHub contribution graph by adding commits to a repository you choose.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src https://api.github.com ipc: http://ipc.localhost; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
   <title>Commit Canvas</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='6' height='6' rx='1.5' fill='%239be9a8'/%3E%3Crect x='9' y='1' width='6' height='6' rx='1.5' fill='%2340c463'/%3E%3Crect x='1' y='9' width='6' height='6' rx='1.5' fill='%2330a14e'/%3E%3Crect x='9' y='9' width='6' height='6' rx='1.5' fill='%23216e39'/%3E%3C/svg%3E">
@@ -133,12 +133,12 @@
 
   <dialog id="confirm">
     <form method="dialog">
-      <h2 data-i18n="confirm.title">Paint to GitHub?</h2>
+      <h2 id="confirm-title"></h2>
       <p id="confirm-body"></p>
-      <p class="muted small-text" data-i18n="confirm.note"></p>
+      <p class="muted small-text" id="confirm-note"></p>
       <div class="row end">
         <button class="ghost" value="cancel" data-i18n="confirm.cancel">Cancel</button>
-        <button class="primary" value="ok" data-i18n="confirm.ok">Paint</button>
+        <button class="primary" id="confirm-ok" value="ok"></button>
       </div>
     </form>
   </dialog>

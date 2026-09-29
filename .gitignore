@@ -10,3 +10,7 @@ Desktop.ini
 # Local secrets
 .env
 .env.*
+
+# Build output
+node_modules/
+package-lock.json
