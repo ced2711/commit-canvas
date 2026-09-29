@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "identifier": "io.github.ced2711.commitcanvas",
   "build": {
-    "frontendDist": "../web"
+    "frontendDist": "../ui"
   },
   "app": {
     "withGlobalTauri": true,
