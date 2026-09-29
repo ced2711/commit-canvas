@@ -3,34 +3,10 @@
 Thumbs.db
 Desktop.ini
 *.swp
-*.swo
 *~
 .idea/
 .vscode/
 
-# Local servers, tooling, and reports
-node_modules/
-.cache/
-.parcel-cache/
-dist/
-coverage/
-*.log
-
-# Environment and local secrets
+# Local secrets
 .env
 .env.*
-!.env.example
-
-# Generated practice repositories and exported user data
-commit-canvas-*/
-exports/
-outputs/
-work/
-.commit-canvas-runtime/
-*.commit-canvas-runtime.json
-*.commit-canvas-artifact.json
-*.commit-canvas.json
-*.commit-canvas-snapshot.json
-commit-canvas-????-??-??.json
-commit-canvas*.sh
-commit-canvas*.ps1
