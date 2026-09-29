@@ -12,17 +12,22 @@ window.CC_GitHub = (() => {
 
   function create(token, { onWait } = {}) {
     async function request(path, { method = 'GET', body } = {}, attempt = 0) {
-      const response = await fetch(API + path, {
-        method,
-        headers: {
-          Accept: 'application/vnd.github+json',
-          Authorization: `Bearer ${token}`,
-          'X-GitHub-Api-Version': '2022-11-28',
-          ...(body ? { 'Content-Type': 'application/json' } : {}),
-        },
-        body: body ? JSON.stringify(body) : undefined,
-        cache: 'no-store',
-      });
+      let response;
+      try {
+        response = await fetch(API + path, {
+          method,
+          headers: {
+            Accept: 'application/vnd.github+json',
+            Authorization: `Bearer ${token}`,
+            'X-GitHub-Api-Version': '2022-11-28',
+            ...(body ? { 'Content-Type': 'application/json' } : {}),
+          },
+          body: body ? JSON.stringify(body) : undefined,
+          cache: 'no-store',
+        });
+      } catch {
+        throw new GitHubError(0, 'NETWORK');
+      }
       if (response.status === 204) return null;
       const data = await response.json().catch(() => null);
       if (response.ok) return data;
@@ -76,8 +81,22 @@ window.CC_GitHub = (() => {
           if (batch.length < 100) break;
         }
         return list
-          .filter((repo) => !repo.fork && !repo.archived)
-          .map((repo) => ({ fullName: repo.full_name, private: repo.private, branch: repo.default_branch }));
+          .filter((repo) => !repo.fork && !repo.archived && repo.permissions?.push !== false)
+          .map((repo) => ({
+            fullName: repo.full_name,
+            private: repo.private,
+            branch: repo.default_branch,
+            description: repo.description ?? '',
+          }));
+      },
+
+      async hasFile(fullName, path) {
+        try {
+          await request(`${repoPath(fullName)}/contents/${path}`);
+          return true;
+        } catch {
+          return false;
+        }
       },
 
       async createRepo(name, isPrivate) {
@@ -85,7 +104,7 @@ window.CC_GitHub = (() => {
           method: 'POST',
           body: { name, private: isPrivate, description: 'Contribution art made with Commit Canvas', auto_init: false },
         });
-        return { fullName: repo.full_name, private: repo.private, branch: repo.default_branch };
+        return { fullName: repo.full_name, private: repo.private, branch: repo.default_branch, description: repo.description ?? '' };
       },
 
       // Returns weeks as arrays of 7 slots ({date, count, level} or null).
@@ -94,7 +113,7 @@ window.CC_GitHub = (() => {
         const data = await graphql(`query($from: DateTime, $to: DateTime) {
           viewer { contributionsCollection(from: $from, to: $to) {
             contributionYears
-            contributionCalendar { weeks { contributionDays { date weekday contributionCount contributionLevel } } }
+            contributionCalendar { totalContributions weeks { contributionDays { date weekday contributionCount contributionLevel } } }
           } }
         }`, variables);
         const collection = data.viewer.contributionsCollection;
@@ -106,7 +125,7 @@ window.CC_GitHub = (() => {
           }
           return slots;
         });
-        return { weeks, years: collection.contributionYears };
+        return { weeks, years: collection.contributionYears, total: collection.contributionCalendar.totalContributions };
       },
 
       // Creates one empty commit per entry of `dates` (repeated dates allowed)

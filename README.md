@@ -6,22 +6,40 @@ Draw on your GitHub contribution graph. Connect your account, pick a repository,
 
 ## Features
 
-- **Paint** with four shades of green, or erase. Click a square with the same shade again to clear it; right‑click also erases.
-- **Text**: type a word (A–Z, 0–9, `! ? . , : - + < > / * ♥`) and it's stamped centered on the graph.
-- **Shift** the whole drawing left or right, **undo** (Ctrl+Z), **clear**. Keys `1`–`4` pick a shade, `0` the eraser.
-- **Your real graph** is shown faded underneath, so you can see what's already there.
+- **See your real graph**: your existing contributions are shown in full color; squares you add get a dot, and **Preview result** shows roughly how the graph will look afterwards.
+- **Skip busy days** (on by default): no commits are added on days that already have contributions, so your drawing stays clean.
+- **Paint** with four shades or the eraser; click a square again (or right‑click) to erase. Each shade shows how many commits it adds.
+- **Text and templates**: stamp a word (A–Z, 0–9, `! ? . , : - + < > / * ♥`) or start from Heart, HELLO, Wave or Stars.
+- **Edit comfortably**: undo / redo (Ctrl+Z / Ctrl+Y), move the drawing left or right, clear, bigger squares, keyboard drawing (arrows + Space, `0`–`4` for shades) and a scroll mode on touch screens.
 - **Past year or any year** you've been active in.
-- **Pick or create** the target repository right in the app.
-- **Undo last paint** resets the branch to where it was before, as long as nothing else was pushed since.
-- Your drawing is saved in the browser automatically. English and 简体中文 interface.
+- **Pick or create** the repository in the app — one click creates a dedicated `commit-canvas-art` repository.
+- **Review before sending**: account, repository, branch, number of commits and dates; large sends need an extra tick.
+- **Undo last send** puts the branch back as long as nothing else was pushed since.
+- **Save / open designs** as files (designs from the previous version open too) and **export a Bash or PowerShell script** if you'd rather create the commits yourself.
+- Drawing saved automatically; English and 简体中文 interface.
+
+## Download
+
+Get the installer for your system from the [latest release](https://github.com/ced2711/commit-canvas/releases/latest):
+
+| System | File |
+| --- | --- |
+| Windows | `…_x64-setup.exe` (or `.msi`) |
+| macOS (Intel & Apple silicon) | `…_universal.dmg` |
+| Linux | `.AppImage` or `.deb` |
+
+The builds are not code‑signed. On Windows, if SmartScreen appears choose **More info → Run anyway**. On macOS, if the app is reported as damaged, run `xattr -cr "/Applications/Commit Canvas.app"` once.
+
+On Windows you can also run `commit-canvas.exe` directly without installing.
 
 ## Use it
 
-It's a static web page — nothing to install.
+The app walks you through four numbered steps:
 
-1. Open the app (GitHub Pages, or any static server, e.g. `python -m http.server` in this folder and visit <http://localhost:8000>).
-2. Create a [personal access token with the `repo` scope](https://github.com/settings/tokens/new?scopes=repo&description=Commit%20Canvas) and paste it. If you use the GitHub CLI, `gh auth token` prints one you can paste.
-3. Choose a repository (or click **New**), draw, and press **Paint to GitHub**.
+1. **Sign in.** Click **Sign in with GitHub**: the app shows a short code (already copied) and opens GitHub in your browser — paste it and click **Authorize**. If you use the GitHub CLI, **Use my GitHub CLI login** is even quicker; pasting a personal access token also works.
+2. **Choose a repository.** Repositories meant for drawing are recognized and picked automatically; if you have none, one click creates `commit-canvas-art`.
+3. **Draw.**
+4. **Send to GitHub**, check the summary, and confirm.
 
 New squares usually show up within minutes; GitHub says it can take up to 24 hours.
 
@@ -35,7 +53,14 @@ For commits to count, GitHub requires the repository to be a non‑fork you own,
 
 ### Privacy
 
-The token is sent only to `api.github.com`. By default it lives in the tab's session storage and disappears when you close the tab; tick **Remember on this device** to keep it in local storage. **Sign out** removes it. You can revoke the token on GitHub at any time.
+Your GitHub login stays on your computer and is only sent to GitHub. **Sign out** removes it, and you can revoke the app's access on GitHub at any time (Settings → Applications).
+
+## Development
+
+Commit Canvas is a [Tauri](https://tauri.app) app: the interface is plain HTML/CSS/JavaScript in [`ui/`](ui) and the native shell is in [`src-tauri/`](src-tauri).
+
+- Install Node.js and Rust, then `npm install`, `npm run icons`, and `npm run dev` (or `npm run build` for installers).
+- Releases: pushing a `v*` tag builds Windows, macOS and Linux installers with GitHub Actions and publishes them as a release. Pull requests build the same installers as downloadable artifacts.
 
 ## Please be fair
 
@@ -47,11 +72,13 @@ Decorative commits are not work. Use this for fun, in a repository you own, and 
 
 在 GitHub 贡献图（绿墙）上画画：连接账号、选一个仓库、涂格子，Commit Canvas 会往这个仓库添加对应日期的 commit，画就会出现在你的主页上。
 
-**功能**：四种深浅的画笔和橡皮擦（右键也能擦）；输入文字自动居中印到墙上；整体左右移动、撤销（Ctrl+Z）、清空；底下半透明显示你已有的真实贡献；可选最近一年或任意年份；在应用里直接选择或新建仓库；可以撤销上一次绘制；草稿自动保存。
+**功能**：完整显示你已有的绿点，新加的格子带圆点标记，并可「预览效果」；默认避开已有贡献的日子；四种深浅画笔和橡皮擦（每种显示对应 commit 数）；文字和模板（爱心 / HELLO / 波浪 / 星星）；撤销 / 重做、整体移动、清空、放大格子、键盘绘图、触屏滑动模式；最近一年或任意年份；在软件里选择或一键新建专用仓库；提交前核对账号、仓库、分支、数量和日期；可撤销上次提交；保存 / 打开设计文件（兼容旧版），导出 Bash / PowerShell 脚本；自动保存草稿；中英文界面。
 
-**使用**：这是一个静态网页，无需安装。打开页面后粘贴一个 [带 `repo` 权限的 Token](https://github.com/settings/tokens/new?scopes=repo&description=Commit%20Canvas)（装了 GitHub CLI 的话运行 `gh auth token` 即可得到），选择仓库，画好后点 **画到 GitHub**。通常几分钟内就能在主页看到，最长可能需要 24 小时。
+**下载**：到 [Releases](https://github.com/ced2711/commit-canvas/releases/latest) 下载对应系统的安装包——Windows 选 `…_x64-setup.exe`，macOS 选 `…_universal.dmg`，Linux 选 `.AppImage` 或 `.deb`。安装包没有代码签名：Windows 弹出 SmartScreen 时点「更多信息 → 仍要运行」；macOS 提示“已损坏”时运行一次 `xattr -cr "/Applications/Commit Canvas.app"`。Windows 也可以直接双击免安装的 `commit-canvas.exe`。
 
-**说明**：每个格子会生成若干个中午时间的空 commit，作者是你的 GitHub `noreply` 邮箱，提交到默认分支并一次性快进推送；只有在你主动“撤销上次绘制”时才会强制重置分支。Token 只会发送给 `api.github.com`，默认只保存在当前标签页，关闭即消失。私有仓库需要在主页开启 “Private contributions” 才会显示。
+**使用**：软件按 1–4 步引导：① 登录——点「用 GitHub 账号登录」，软件显示验证码（已自动复制）并打开 GitHub，粘贴后点 Authorize 即可；装了 GitHub CLI 也可以一键沿用登录，或粘贴 Token；② 自动识别并选好画画用的仓库，没有的话一键创建 `commit-canvas-art`；③ 画画；④ 提交到 GitHub，核对后确认。通常几分钟内就能在主页看到，最长可能需要 24 小时。
+
+**说明**：每个格子会生成若干个中午时间的空 commit，作者是你的 GitHub `noreply` 邮箱，提交到默认分支并一次性快进推送；只有在你主动“撤销上次绘制”时才会强制重置分支。登录信息只保存在你的电脑上、只发送给 GitHub，点「退出」即可清除。私有仓库需要在主页开启 “Private contributions” 才会显示。
 
 装饰性的 commit 不代表真实工作量，请只在自己的仓库里娱乐使用。
 

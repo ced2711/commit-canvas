@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Draw on your GitHub contribution graph by adding commits to a repository you choose.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src https://api.github.com ipc: http://ipc.localhost; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>Commit Canvas</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='6' height='6' rx='1.5' fill='%239be9a8'/%3E%3Crect x='9' y='1' width='6' height='6' rx='1.5' fill='%2340c463'/%3E%3Crect x='1' y='9' width='6' height='6' rx='1.5' fill='%2330a14e'/%3E%3Crect x='9' y='9' width='6' height='6' rx='1.5' fill='%23216e39'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="src/i18n.js" defer></script>
+  <script src="src/font.js" defer></script>
+  <script src="src/github.js" defer></script>
+  <script src="src/app.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <div>
+        <h1>Commit Canvas</h1>
+        <p data-i18n="tagline">Draw on your GitHub contribution graph</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="ghost small" id="lang" type="button">中文</button>
+      <div class="account" id="account" hidden>
+        <img id="avatar" alt="" width="24" height="24">
+        <a id="login" href="https://github.com" target="_blank" rel="noopener"></a>
+        <button class="ghost small" id="signout" type="button" data-i18n="account.signout">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Step 1 -->
+    <section class="card step" id="step-connect">
+      <h2><span class="num">1</span><span data-i18n="step.connect">Sign in to GitHub</span></h2>
+      <div id="connect-body">
+        <div class="row wrap" id="quick-login" hidden>
+          <button class="primary" id="device-login" type="button" hidden data-i18n="connect.device">Sign in with GitHub</button>
+          <button class="ghost" id="gh-login" type="button" hidden data-i18n="connect.gh">Use my GitHub CLI login</button>
+        </div>
+        <div class="device" id="device" hidden>
+          <p class="muted" data-i18n="device.title">Enter this code on GitHub</p>
+          <p class="code" id="device-code"></p>
+          <p class="small-text muted" data-i18n="device.body"></p>
+          <div class="row">
+            <button class="ghost small" id="device-open" type="button" data-i18n="device.open">Open the page again</button>
+            <button class="ghost small" id="device-cancel" type="button" data-i18n="repo.cancel">Cancel</button>
+          </div>
+        </div>
+        <p class="divider small-text muted" id="or-token" hidden><span data-i18n="connect.or">or paste a token</span></p>
+        <form id="connect-form" class="row">
+          <input id="token" type="password" autocomplete="off" spellcheck="false" required data-i18n-placeholder="connect.placeholder" placeholder="ghp_…">
+          <button class="primary" type="submit" data-i18n="connect.button">Connect</button>
+        </form>
+        <div class="row small-text spread">
+          <label class="check"><input id="remember" type="checkbox"> <span data-i18n="connect.remember">Remember on this device</span></label>
+          <a href="https://github.com/settings/tokens/new?scopes=repo&amp;description=Commit%20Canvas" target="_blank" rel="noopener" data-i18n="connect.create">Create a token</a>
+        </div>
+        <details class="help">
+          <summary data-i18n="connect.help">How do I get a token?</summary>
+          <ol>
+            <li data-i18n="connect.help1"></li>
+            <li data-i18n="connect.help2"></li>
+            <li data-i18n="connect.help3"></li>
+          </ol>
+          <p class="small-text muted" data-i18n="connect.privacy"></p>
+        </details>
+      </div>
+      <p class="done-line" id="connect-done" hidden></p>
+    </section>
+
+    <!-- Step 2 -->
+    <section class="card step" id="step-repo">
+      <h2><span class="num">2</span><span data-i18n="step.repo">Choose a repository</span></h2>
+      <div class="quick-repo" id="repo-quick" hidden>
+        <p class="small-text muted" data-i18n="repo.noneFound">No repository for drawing found yet.</p>
+        <button class="primary" id="repo-quick-create" type="button"></button>
+      </div>
+      <div class="row wrap">
+        <select id="repo" class="grow" disabled></select>
+        <button class="ghost" id="repo-new" type="button" disabled>+ <span data-i18n="repo.new">New repository</span></button>
+      </div>
+      <form class="row wrap" id="new-repo" hidden>
+        <input id="new-repo-name" class="grow" required maxlength="100" pattern="[A-Za-z0-9._\-]+" data-i18n-placeholder="repo.namePlaceholder" placeholder="commit-canvas-art">
+        <label class="check"><input id="new-repo-private" type="checkbox"> <span data-i18n="repo.private">Private</span></label>
+        <button class="primary" type="submit" data-i18n="repo.create">Create</button>
+        <button class="ghost" id="new-repo-cancel" type="button" data-i18n="repo.cancel">Cancel</button>
+      </form>
+      <p class="hint" id="repo-hint"></p>
+    </section>
+
+    <!-- Step 3 -->
+    <section class="card step" id="step-draw">
+      <div class="step-head">
+        <h2><span class="num">3</span><span data-i18n="step.draw">Draw</span></h2>
+        <div class="row tight">
+          <select id="range" data-i18n-aria-label="range.label" aria-label="Range"></select>
+          <button class="ghost icon" id="refresh" type="button" data-i18n-title="refresh" title="Reload my contributions" hidden>↻</button>
+          <div class="segmented" role="group">
+            <button type="button" id="mode-edit" aria-pressed="true" data-i18n="mode.edit">Edit</button>
+            <button type="button" id="mode-preview" aria-pressed="false" data-i18n="mode.preview">Preview result</button>
+          </div>
+        </div>
+      </div>
+      <p class="small-text muted total" id="total"></p>
+
+      <div class="toolbar">
+        <div class="brushes" role="radiogroup">
+          <button type="button" class="brush" data-level="0" role="radio"><i class="swatch eraser">⌫</i><small data-i18n="tool.eraser">Eraser</small></button>
+          <button type="button" class="brush" data-level="1" role="radio"><i class="swatch l1"></i><small></small></button>
+          <button type="button" class="brush" data-level="2" role="radio"><i class="swatch l2"></i><small></small></button>
+          <button type="button" class="brush" data-level="3" role="radio"><i class="swatch l3"></i><small></small></button>
+          <button type="button" class="brush" data-level="4" role="radio"><i class="swatch l4"></i><small></small></button>
+        </div>
+        <div class="tools">
+          <button class="ghost icon" id="undo" type="button" data-i18n-title="undo" title="Undo">↶</button>
+          <button class="ghost icon" id="redo" type="button" data-i18n-title="redo" title="Redo">↷</button>
+          <button class="ghost icon" id="shift-left" type="button" data-i18n-title="shift.left" title="Move drawing left">←</button>
+          <button class="ghost icon" id="shift-right" type="button" data-i18n-title="shift.right" title="Move drawing right">→</button>
+          <button class="ghost icon" id="zoom" type="button" aria-pressed="false" data-i18n-title="zoom" title="Bigger squares">⤢</button>
+          <button class="ghost icon touch-only" id="pan" type="button" aria-pressed="false" data-i18n-title="pan" title="Scroll mode">↔</button>
+          <button class="ghost" id="clear" type="button" data-i18n="clear">Clear</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <form class="text-tool" id="text-form">
+          <input id="text" maxlength="12" autocomplete="off" data-i18n-placeholder="text.placeholder" placeholder="Type text…">
+          <button class="ghost" type="submit" data-i18n="text.add">Stamp text</button>
+        </form>
+        <div class="templates">
+          <span class="small-text muted" data-i18n="template.label">Templates</span>
+          <button class="ghost small" type="button" data-template="heart" data-i18n="template.heart">♥ Heart</button>
+          <button class="ghost small" type="button" data-template="hello" data-i18n="template.hello">HELLO</button>
+          <button class="ghost small" type="button" data-template="wave" data-i18n="template.wave">≋ Wave</button>
+          <button class="ghost small" type="button" data-template="stars" data-i18n="template.stars">✦ Stars</button>
+        </div>
+      </div>
+
+      <div class="graph-scroll">
+        <div class="graph" id="graph" tabindex="0" role="application" data-i18n-aria-label="grid.label" aria-label="Drawing grid" aria-describedby="grid-help"></div>
+      </div>
+      <p class="small-text muted" id="grid-help" data-i18n="grid.help"></p>
+
+      <div class="legend small-text">
+        <span class="keys" id="legend-edit">
+          <span><i class="cell l2 existing"></i> <span data-i18n="legend.existing">Already on GitHub</span></span>
+          <span><i class="cell l3 drawn"></i> <span data-i18n="legend.planned">Will be added</span></span>
+          <span id="legend-blocked"><i class="cell l3 drawn blocked"></i> <span data-i18n="legend.blocked">Skipped</span></span>
+        </span>
+        <span class="muted" id="legend-preview" data-i18n="legend.preview" hidden></span>
+        <span class="scale muted">
+          <span data-i18n="less">Less</span>
+          <i class="cell l0"></i><i class="cell l1"></i><i class="cell l2"></i><i class="cell l3"></i><i class="cell l4"></i>
+          <span data-i18n="more">More</span>
+        </span>
+      </div>
+      <label class="check small-text avoid"><input id="avoid" type="checkbox" checked> <span data-i18n="avoid.label">Don’t add commits on days that already have contributions</span></label>
+    </section>
+
+    <!-- Step 4 -->
+    <section class="card step" id="step-paint">
+      <h2><span class="num">4</span><span data-i18n="step.paint">Send to GitHub</span></h2>
+      <div class="stats">
+        <div><span class="small-text muted" data-i18n="summary.commits">Commits</span><strong id="sum-commits">0</strong></div>
+        <div><span class="small-text muted" data-i18n="summary.days">Days</span><strong id="sum-days">0</strong></div>
+        <div><span class="small-text muted" data-i18n="summary.range">Dates</span><strong id="sum-range">—</strong></div>
+      </div>
+      <p class="small-text muted" id="sum-skipped" hidden></p>
+      <div class="paint-row">
+        <label class="strength small-text">
+          <span data-i18n="strength.label">Commits for the darkest shade</span>
+          <input id="strength" type="number" min="1" max="50" value="4">
+          <span class="muted" data-i18n="strength.help"></span>
+        </label>
+        <button class="primary big" id="paint" type="button" data-i18n="paint.button">Send to GitHub</button>
+      </div>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+      <div class="progress" id="progress" hidden><div></div></div>
+      <div class="last" id="last" hidden>
+        <span id="last-text"></span>
+        <button class="ghost small" id="last-undo" type="button" data-i18n="last.undo">Undo last send</button>
+      </div>
+    </section>
+
+    <details class="card more">
+      <summary data-i18n="more.title">More tools</summary>
+      <div class="row wrap">
+        <button class="ghost" id="design-save" type="button" data-i18n="design.save">Save design</button>
+        <button class="ghost" id="design-open" type="button" data-i18n="design.open">Open design</button>
+        <input id="design-file" type="file" accept=".json,application/json" hidden>
+      </div>
+      <h3 data-i18n="script.title">Offline script</h3>
+      <p class="small-text muted" data-i18n="script.help"></p>
+      <div class="row wrap">
+        <input id="script-email" class="grow" type="email" autocomplete="email" data-i18n-placeholder="script.email" placeholder="Commit email">
+        <button class="ghost" id="script-bash" type="button" data-i18n="script.bash">Export Bash script</button>
+        <button class="ghost" id="script-ps" type="button" data-i18n="script.powershell">Export PowerShell script</button>
+      </div>
+    </details>
+  </main>
+
+  <footer class="foot small-text muted">
+    <a href="https://github.com/ced2711/commit-canvas" target="_blank" rel="noopener">Commit Canvas</a> · AGPL-3.0
+  </footer>
+
+  <dialog id="confirm">
+    <form method="dialog">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-body"></p>
+      <dl id="confirm-details"></dl>
+      <label class="check small-text" id="confirm-check-wrap" hidden><input id="confirm-check" type="checkbox"> <span id="confirm-check-text"></span></label>
+      <p class="muted small-text" id="confirm-note"></p>
+      <div class="row end">
+        <button class="ghost" value="cancel" data-i18n="confirm.cancel">Cancel</button>
+        <button class="primary" id="confirm-ok" value="ok"></button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

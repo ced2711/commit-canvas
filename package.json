@@ -1,0 +1,16 @@
+{
+  "name": "commit-canvas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Draw on your GitHub contribution graph by adding commits to a repository you choose.",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "tauri": "tauri",
+    "icons": "tauri icon app-icon.png",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}
