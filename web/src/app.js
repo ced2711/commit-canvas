@@ -53,8 +53,7 @@
     for (const el of document.querySelectorAll('[data-i18n-aria-label]')) el.setAttribute('aria-label', t(el.dataset.i18nAriaLabel));
     const past = $('range').querySelector('option[value=""]');
     if (past) past.textContent = t('range.past');
-    const none = $('repo').querySelector('option[value=""]');
-    if (none) none.textContent = t('repo.none');
+    renderRepoOptions();
     buildGraph();
     renderAccount();
     renderRepoHint();
@@ -725,6 +724,7 @@
     $('repo').replaceChildren(new Option(t('repo.none'), ''));
     $('range').replaceChildren(new Option(t('range.past'), ''));
     $('new-repo').hidden = true;
+    $('repo-quick').hidden = true;
     state.weeks = offlineWeeks();
     renderAccount();
     renderRepoHint();
@@ -809,14 +809,50 @@
     }
     // A just-created repository may not be listed yet.
     if (created && !state.repos.some((r) => r.fullName === created.fullName)) state.repos.unshift(created);
-    const current = created?.fullName ?? store.get('cc.repo');
-    const el = $('repo');
-    el.replaceChildren(new Option(t('repo.none'), ''));
-    for (const repo of state.repos) {
-      el.append(new Option(repo.private ? `${repo.fullName} 🔒` : repo.fullName, repo.fullName));
-    }
-    el.value = state.repos.some((r) => r.fullName === current) ? current : '';
+    await markDrawingRepos();
+    renderRepoOptions();
+    const stored = store.get('cc.repo');
+    const pick = created?.fullName
+      ?? (state.repos.some((r) => r.fullName === stored) ? stored : state.repos.find((r) => r.drawing)?.fullName)
+      ?? '';
+    state.autoPicked = Boolean(pick && !created && pick !== stored);
+    $('repo').value = pick;
     onRepoChange();
+  }
+
+  // Recognizes repositories meant for drawing: ones this app created, the
+  // original version's managed "commit-canvas-*" repositories, and art repos.
+  async function markDrawingRepos() {
+    for (const repo of state.repos) {
+      const name = repo.fullName.split('/')[1];
+      repo.drawing = /Commit Canvas/i.test(repo.description)
+        || /^commit-canvas-./i.test(name)
+        || /contribution[-_]?art|commit[-_]?art|gitfiti|graffiti/i.test(name);
+    }
+    // A repository named exactly "commit-canvas" may be the app itself; the
+    // original version marked its practice repositories with a file.
+    await Promise.all(state.repos
+      .filter((r) => !r.drawing && /\/commit-canvas$/i.test(r.fullName))
+      .map(async (r) => { r.drawing = await state.api.hasFile(r.fullName, '.commit-canvas-managed'); }));
+  }
+
+  function renderRepoOptions() {
+    const el = $('repo');
+    const label = (repo) => (repo.private ? `${repo.fullName} 🔒` : repo.fullName);
+    const group = (key, repos) => {
+      const g = Object.assign(document.createElement('optgroup'), { label: t(key) });
+      g.append(...repos.map((repo) => new Option(label(repo), repo.fullName)));
+      return g;
+    };
+    const drawing = state.repos.filter((r) => r.drawing);
+    const other = state.repos.filter((r) => !r.drawing);
+    const value = el.value;
+    el.replaceChildren(new Option(t('repo.none'), ''));
+    if (drawing.length) el.append(group('repo.groupDrawing', drawing));
+    if (other.length) el.append(group('repo.groupOther', other));
+    el.value = value;
+    $('repo-quick').hidden = !state.user || drawing.length > 0;
+    $('repo-quick-create').textContent = t('repo.quickCreate', { name: suggestName() });
   }
 
   function onRepoChange() {
@@ -828,13 +864,13 @@
 
   function renderRepoHint() {
     const repo = state.repos.find((r) => r.fullName === $('repo').value);
-    let hint = '';
-    if (state.user && !repo) hint = t('repo.suggest');
-    else if (repo?.private) hint = t('repo.privateHint');
-    else if (repo && !/canvas|art|draw|paint|graffiti/i.test(repo.fullName)) hint = t('repo.realHint');
-    $('repo-hint').textContent = hint;
-    $('repo-hint').hidden = !hint;
-    $('repo-new').classList.toggle('primary', Boolean(state.user && !repo));
+    const hints = [];
+    if (state.user && !repo && state.repos.some((r) => r.drawing)) hints.push(t('repo.pick'));
+    if (repo && state.autoPicked) hints.push(t('repo.autoPicked'));
+    if (repo?.private) hints.push(t('repo.privateHint'));
+    else if (repo && !repo.drawing) hints.push(t('repo.realHint'));
+    $('repo-hint').textContent = hints.join(' ');
+    $('repo-hint').hidden = !hints.length;
   }
 
   function suggestName() {
@@ -844,22 +880,30 @@
     return name;
   }
 
-  $('repo').addEventListener('change', onRepoChange);
+  $('repo').addEventListener('change', () => {
+    state.autoPicked = false;
+    onRepoChange();
+  });
+
+  async function createRepo(name, isPrivate) {
+    try {
+      const repo = await state.api.createRepo(name, isPrivate);
+      $('new-repo').hidden = true;
+      await loadRepos({ ...repo, drawing: true });
+    } catch (error) {
+      setStatus(errorText(error), 'error');
+    }
+  }
+  $('repo-quick-create').addEventListener('click', () => createRepo(suggestName(), false));
   $('repo-new').addEventListener('click', () => {
     $('new-repo').hidden = false;
     $('new-repo-name').value = suggestName();
     $('new-repo-name').select();
   });
   $('new-repo-cancel').addEventListener('click', () => { $('new-repo').hidden = true; });
-  $('new-repo').addEventListener('submit', async (event) => {
+  $('new-repo').addEventListener('submit', (event) => {
     event.preventDefault();
-    try {
-      const repo = await state.api.createRepo($('new-repo-name').value.trim(), $('new-repo-private').checked);
-      $('new-repo').hidden = true;
-      await loadRepos(repo);
-    } catch (error) {
-      setStatus(errorText(error), 'error');
-    }
+    createRepo($('new-repo-name').value.trim(), $('new-repo-private').checked);
   });
 
   // ---------- contributions ----------

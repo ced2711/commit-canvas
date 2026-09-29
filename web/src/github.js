@@ -81,8 +81,22 @@ window.CC_GitHub = (() => {
           if (batch.length < 100) break;
         }
         return list
-          .filter((repo) => !repo.fork && !repo.archived)
-          .map((repo) => ({ fullName: repo.full_name, private: repo.private, branch: repo.default_branch }));
+          .filter((repo) => !repo.fork && !repo.archived && repo.permissions?.push !== false)
+          .map((repo) => ({
+            fullName: repo.full_name,
+            private: repo.private,
+            branch: repo.default_branch,
+            description: repo.description ?? '',
+          }));
+      },
+
+      async hasFile(fullName, path) {
+        try {
+          await request(`${repoPath(fullName)}/contents/${path}`);
+          return true;
+        } catch {
+          return false;
+        }
       },
 
       async createRepo(name, isPrivate) {
@@ -90,7 +104,7 @@ window.CC_GitHub = (() => {
           method: 'POST',
           body: { name, private: isPrivate, description: 'Contribution art made with Commit Canvas', auto_init: false },
         });
-        return { fullName: repo.full_name, private: repo.private, branch: repo.default_branch };
+        return { fullName: repo.full_name, private: repo.private, branch: repo.default_branch, description: repo.description ?? '' };
       },
 
       // Returns weeks as arrays of 7 slots ({date, count, level} or null).

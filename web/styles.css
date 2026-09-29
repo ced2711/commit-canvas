@@ -197,6 +197,21 @@ button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(
 .help ol { margin: 8px 0; padding-left: 20px; }
 .help li { margin: 2px 0; }
 
+/* ---------- repository ---------- */
+.quick-repo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+}
+.quick-repo p { margin: 0; }
+.quick-repo + .row { margin-top: 0; }
+
 /* ---------- drawing ---------- */
 .toolbar {
   display: flex;

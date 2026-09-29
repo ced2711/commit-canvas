@@ -77,6 +77,10 @@
     <!-- Step 2 -->
     <section class="card step" id="step-repo">
       <h2><span class="num">2</span><span data-i18n="step.repo">Choose a repository</span></h2>
+      <div class="quick-repo" id="repo-quick" hidden>
+        <p class="small-text muted" data-i18n="repo.noneFound">No repository for drawing found yet.</p>
+        <button class="primary" id="repo-quick-create" type="button"></button>
+      </div>
       <div class="row wrap">
         <select id="repo" class="grow" disabled></select>
         <button class="ghost" id="repo-new" type="button" disabled>+ <span data-i18n="repo.new">New repository</span></button>
